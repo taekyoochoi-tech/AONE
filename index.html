@@ -67,6 +67,16 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .shot .v{font:700 34px/1.05 "Barlow Condensed",sans-serif}
 .shot .v small{font-size:.5em;margin-left:1px}
 .shot .d{font-size:13px;color:var(--soft)}
+.rec{margin-top:6px;display:flex;flex-wrap:wrap;gap:4px}
+.rec span{font-size:12.5px;line-height:1.5;background:var(--fair-soft);color:var(--fair);border-radius:4px;padding:1px 6px;font-weight:700;white-space:nowrap}
+.rec span.alt{background:none;border:1px solid var(--line);color:var(--soft);font-weight:500}
+.rec em{font-style:normal;font-size:12px;color:var(--up);font-weight:700}
+.swing{margin-top:14px}
+.swing tbody tr{cursor:default}
+.swing tbody tr:hover td{background:none}
+.swing td,.swing th{text-align:center}
+.swing td:first-child,.swing th:first-child{text-align:left;font-weight:700}
+.clubs{color:var(--fair);font-weight:500;font-size:13px}
 .note{margin:14px 0 0;padding:10px 14px;background:var(--fair-soft);border-radius:8px;font-size:15px}
 .note b{color:var(--fair);margin-right:6px}
 
@@ -81,6 +91,7 @@ figure img{display:block;width:100%;height:auto}
 .stack svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .badge{display:inline-block;font-size:12.5px;font-weight:700;color:#3a2f00;background:#FFE14D;border-radius:4px;padding:1px 8px;margin-left:6px;vertical-align:2px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--soft);margin:10px 0 0}
+.legend[hidden]{display:none}
 .legend i{display:inline-block;width:22px;height:4px;border-radius:2px;vertical-align:middle;margin-right:6px}
 figcaption{padding:8px 12px;font-size:13.5px;color:var(--soft);display:flex;justify-content:space-between;gap:8px}
 figcaption b{color:var(--ink)}
@@ -189,6 +200,12 @@ dialog::backdrop{background:rgba(0,0,0,.92)}
     <div class="tables" id="tables"></div>
   </section>
 
+  <section class="ov" id="swing">
+    <h2>내 스윙 거리표</h2>
+    <p>캐리 기준. 편한 = 3/4 편한 스윙, 풀 = 3/4 풀 스윙, F = 페이드, D = 드로우. 70m 미만은 웨지.</p>
+    <div class="tbl swing"><table><thead><tr><th>클럽</th><th>편한 F</th><th>편한 D</th><th>풀 F</th><th>풀 D</th></tr></thead><tbody id="swingBody"></tbody></table></div>
+  </section>
+
   <footer>
     <b>Prepared by DC</b><br>
     공략 거리와 그린 사진은 직접 정리한 앱 화면 기준입니다. 휴대폰에서는 좌우로 밀어서 홀을 넘길 수 있어요.
@@ -240,6 +257,47 @@ function ladder(h){
   return svg;
 }
 
+/* swing table: [club, 편한F, 편한D, 풀F, 풀D] carry m */
+const SW=[["52°",70,75,80,85],["P",85,90,100,105],["9번",95,100,110,115],["8번",105,110,120,125],["7번",115,120,130,135],["6번",125,130,140,145],["5번",135,140,150,155],["4번",null,null,null,165]];
+const SWN=["편한F","편한D","풀F","풀D"];
+const OPTS=[];
+SW.forEach(r=>r.slice(1).forEach((c,i)=>{if(c)OPTS.push({club:r[0],sw:SWN[i],c});}));
+OPTS.push({club:"UT 3번",sw:"",c:180},{club:"우드 3번",sw:"",c:190});
+const OVR={"w5-0":[{club:"드라이버",sw:"",c:null,note:"190m 지점까지"}]};
+function recs(h,k){
+  const d=h.shots[k].adj, key=h.id+"-"+k;
+  if(OVR[key])return {list:OVR[key]};
+  if(d<70)return {list:[{club:"웨지",sw:"",c:null}]};
+  const last=k===h.shots.length-1, tee=k===0&&h.par>3;
+  if(tee&&d>=186){
+    const l=[{club:"드라이버",sw:"",c:null}];
+    if(Math.abs(d-190)<=5)l.push({club:"우드 3번",sw:"",c:190,alt:true});
+    return {list:l};
+  }
+  if(!last&&h.par>3){ /* 끊어 가는 샷: 런을 감안해 캐리가 목표 이하인 것 중 가장 긴 것 */
+    const under=OPTS.filter(o=>o.c<=d);
+    const m=Math.max(...under.map(o=>o.c));
+    return {list:under.filter(o=>o.c===m),tag:d-m>=3?`+런 ${d-m}m`:""};
+  }
+  /* 그린 공략: 가장 가까운 캐리 */
+  const md=Math.min(...OPTS.map(o=>Math.abs(o.c-d)));
+  if(md>5){
+    const lo=Math.max(...OPTS.filter(o=>o.c<d).map(o=>o.c)),hi=Math.min(...OPTS.filter(o=>o.c>d).map(o=>o.c));
+    return {list:OPTS.filter(o=>o.c===lo||o.c===hi),tag:"사이 거리"};
+  }
+  const l=OPTS.filter(o=>Math.abs(o.c-d)===md);
+  const diff=l[0].c-d;
+  return {list:l,tag:diff<=-3?`${-diff}m 짧음`:diff>=3?`${diff}m 김`:""};
+}
+const lab=o=>`${o.club}${o.sw?" "+o.sw:""}${o.c?" "+o.c:""}${o.note?" ("+o.note+")":""}`;
+function recHTML(h,k){
+  const r=recs(h,k);
+  return `<div class="rec">${r.list.map(o=>`<span class="${o.alt?"alt":""}">${lab(o)}</span>`).join("")}${r.tag?`<em>${r.tag}</em>`:""}</div>`;
+}
+function short(h,k){
+  const o=recs(h,k).list[0];
+  return o.club==="드라이버"?"드라이버":o.club==="웨지"?"웨지":`${o.club.replace("번","")}${o.sw?" "+o.sw:""}`;
+}
 function overlay(h){
   if(!h.ov)return "";
   const o=h.ov,[px,py]=o.pin,r=50*o.pxm,w=20*o.pxm,R=o.route;
@@ -267,7 +325,7 @@ function go(i,push){
   $("hAdj").textContent=h.adj;
   $("hSub").innerHTML=`수평 ${h.flat}m, ${elv(h.el)}`;
   $("ladder").innerHTML=ladder(h);
-  $("shots").style.setProperty("--n",h.shots.length);$("shots").innerHTML=h.shots.map((s,k)=>`<div class="shot" style="--c:${COLORS[k]}"><div class="k">${shotName(k,h.shots.length,h.par)}</div><div class="v num">${s.adj}<small>m</small></div><div class="d">${s.flat==null?'':`수평 ${s.flat}m, `}${s.flat==null?'<span class="flat">3온 계획</span>':(s.el?elvS(s.el)+'m':'<span class="flat">평지</span>')}</div></div>`).join("");
+  $("shots").style.setProperty("--n",h.shots.length);$("shots").innerHTML=h.shots.map((s,k)=>`<div class="shot" style="--c:${COLORS[k]}"><div class="k">${shotName(k,h.shots.length,h.par)}</div><div class="v num">${s.adj}<small>m</small></div><div class="d">${s.flat==null?'':`수평 ${s.flat}m, `}${s.flat==null?'<span class="flat">3온 계획</span>':(s.el?elvS(s.el)+'m':'<span class="flat">평지</span>')}</div>${recHTML(h,k)}</div>`).join("");
   $("note").innerHTML=`<b>주의</b>${h.note}`;
   $("stackS").innerHTML=`<img id="imgS" alt="" src="${h.img}">`+overlay(h);$("imgS").alt=`${h.course} ${h.no}번 홀 공략도`;
   $("imgG").src=h.green;$("imgG").alt=`${h.course} ${h.no}번 홀 그린 높낮이`;
@@ -319,12 +377,13 @@ lb.addEventListener("click",e=>{if(e.target===$("lbW"))lb.close();});
 function table(c,label){
   const hs=H.filter(h=>h.id[0]===c);
   const par=hs.reduce((s,h)=>s+h.par,0),adj=hs.reduce((s,h)=>s+h.adj,0);
-  return `<div class="tbl"><table><caption>${label}</caption><thead><tr><th>홀</th><th>파</th><th class="n">보정</th><th>높낮이</th><th>샷 계획</th></tr></thead><tbody>${
-    hs.map(h=>`<tr data-id="${h.id}" tabindex="0"><td class="num"><b>${h.no}</b></td><td class="num">${h.par}</td><td class="n num">${h.adj}</td><td>${elvS(h.el)}</td><td class="plan num">${h.shots.map(s=>s.adj).join(" → ")}${h.ov?' <span class="badge">3온</span>':''}</td></tr>`).join("")
+  return `<div class="tbl"><table><caption>${label}</caption><thead><tr><th>홀</th><th>파</th><th class="n">보정</th><th>높낮이</th><th>샷 계획 / 클럽</th></tr></thead><tbody>${
+    hs.map(h=>`<tr data-id="${h.id}" tabindex="0"><td class="num"><b>${h.no}</b></td><td class="num">${h.par}</td><td class="n num">${h.adj}</td><td>${elvS(h.el)}</td><td class="plan num">${h.shots.map(s=>s.adj).join(" → ")}${h.ov?' <span class="badge">3온</span>':''}<div class="clubs">${h.shots.map((s,k)=>short(h,k)).join(' → ')}</div></td></tr>`).join("")
   }</tbody><tfoot><tr><td>합계</td><td class="num">${par}</td><td class="n num">${adj}</td><td></td><td></td></tr></tfoot></table></div>`;
 }
+$("swingBody").innerHTML=SW.map(r=>`<tr><td>${r[0]}</td>${r.slice(1).map(c=>`<td class="num">${c??"–"}</td>`).join("")}</tr>`).join("")+`<tr><td>UT 3번</td><td colspan="4" class="num">180</td></tr><tr><td>우드 3번</td><td colspan="4" class="num">190</td></tr>`;
 $("tables").innerHTML=table("w","서 코스 (전반)")+table("s","남 코스 (후반)");
-document.querySelectorAll("tbody tr").forEach(r=>{
+document.querySelectorAll("#tables tbody tr").forEach(r=>{
   const f=()=>{go(idx[r.dataset.id],true);$("hole").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});};
   r.addEventListener("click",f);r.addEventListener("keydown",e=>{if(e.key==="Enter")f();});
 });
