@@ -202,9 +202,9 @@ dialog::backdrop{background:rgba(0,0,0,.92)}
 
   <section class="ov" id="swing">
     <h2>내 스윙 거리표</h2>
-    <p>캐리 기준. 편한 = 3/4 편한 스윙, 풀 = 3/4 풀 스윙, F = 페이드, D = 드로우. 70m 미만은 웨지. P~4번은 풀 페이드를 쓰지 않습니다.</p>
-    <p><b>P~4번 외우는 법:</b> 편한 D는 9번 100m에서 한 클럽마다 10m. 편한 F는 −8m, 풀 D는 +10m.</p>
-    <div class="tbl swing"><table><thead><tr><th>클럽</th><th>편한 F</th><th>편한 D</th><th>풀 F (52°만)</th><th>풀 D</th></tr></thead><tbody id="swingBody"></tbody></table></div>
+    <p>캐리 기준. 편한 = 3/4 편한 스윙, 풀 = 3/4 풀 스윙, F = 페이드, D = 드로우. 70m 미만은 웨지. 풀 페이드는 쓰지 않습니다.</p>
+    <p><b>P~4번 외우는 법:</b> 편한 D는 9번 100m에서 한 클럽마다 10m. 편한 F는 −10m, 풀 D는 +10m.</p>
+    <div class="tbl swing"><table><thead><tr><th>클럽</th><th>편한 F</th><th>편한 D</th><th>풀 D</th></tr></thead><tbody id="swingBody"></tbody></table></div>
   </section>
 
   <footer>
@@ -259,7 +259,7 @@ function ladder(h){
 }
 
 /* swing table: [club, 편한F, 편한D, 풀F, 풀D] carry m */
-const SW=[["52°",70,75,80,85],["P",82,90,null,100],["9번",92,100,null,110],["8번",102,110,null,120],["7번",112,120,null,130],["6번",122,130,null,140],["5번",132,140,null,150],["4번",142,150,null,160]];
+const SW=[["52°",70,75,null,85],["P",80,90,null,100],["9번",90,100,null,110],["8번",100,110,null,120],["7번",110,120,null,130],["6번",120,130,null,140],["5번",130,140,null,150],["4번",140,150,null,160]];
 const SWN=["편한F","편한D","풀F","풀D"];
 const OPTS=[];
 SW.forEach(r=>r.slice(1).forEach((c,i)=>{if(c)OPTS.push({club:r[0],sw:SWN[i],c});}));
@@ -382,7 +382,7 @@ function table(c,label){
     hs.map(h=>`<tr data-id="${h.id}" tabindex="0"><td class="num"><b>${h.no}</b></td><td class="num">${h.par}</td><td class="n num">${h.adj}</td><td>${elvS(h.el)}</td><td class="plan num">${h.shots.map(s=>s.adj).join(" → ")}${h.ov?' <span class="badge">3온</span>':''}<div class="clubs">${h.shots.map((s,k)=>short(h,k)).join(' → ')}</div></td></tr>`).join("")
   }</tbody><tfoot><tr><td>합계</td><td class="num">${par}</td><td class="n num">${adj}</td><td></td><td></td></tr></tfoot></table></div>`;
 }
-$("swingBody").innerHTML=SW.map(r=>`<tr><td>${r[0]}</td>${r.slice(1).map(c=>`<td class="num">${c??"–"}</td>`).join("")}</tr>`).join("")+`<tr><td>UT 3번</td><td colspan="4" class="num">180</td></tr><tr><td>우드 3번</td><td colspan="4" class="num">190</td></tr>`;
+$("swingBody").innerHTML=SW.map(r=>`<tr><td>${r[0]}</td>${[r[1],r[2],r[4]].map(c=>`<td class="num">${c??"–"}</td>`).join("")}</tr>`).join("")+`<tr><td>UT 3번</td><td colspan="3" class="num">180</td></tr><tr><td>우드 3번</td><td colspan="3" class="num">190</td></tr>`;
 $("tables").innerHTML=table("w","서 코스 (전반)")+table("s","남 코스 (후반)");
 document.querySelectorAll("#tables tbody tr").forEach(r=>{
   const f=()=>{go(idx[r.dataset.id],true);$("hole").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});};
