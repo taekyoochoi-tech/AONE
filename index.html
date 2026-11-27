@@ -202,8 +202,9 @@ dialog::backdrop{background:rgba(0,0,0,.92)}
 
   <section class="ov" id="swing">
     <h2>내 스윙 거리표</h2>
-    <p>캐리 기준. 편한 = 3/4 편한 스윙, 풀 = 3/4 풀 스윙, F = 페이드, D = 드로우. 70m 미만은 웨지.</p>
-    <div class="tbl swing"><table><thead><tr><th>클럽</th><th>편한 F</th><th>편한 D</th><th>풀 F</th><th>풀 D</th></tr></thead><tbody id="swingBody"></tbody></table></div>
+    <p>캐리 기준. 편한 = 3/4 편한 스윙, 풀 = 3/4 풀 스윙, F = 페이드, D = 드로우. 70m 미만은 웨지. P~4번은 풀 페이드를 쓰지 않습니다.</p>
+    <p><b>P~4번 외우는 법:</b> 편한 D는 9번 100m에서 한 클럽마다 10m. 편한 F는 −8m, 풀 D는 +10m.</p>
+    <div class="tbl swing"><table><thead><tr><th>클럽</th><th>편한 F</th><th>편한 D</th><th>풀 F (52°만)</th><th>풀 D</th></tr></thead><tbody id="swingBody"></tbody></table></div>
   </section>
 
   <footer>
@@ -258,7 +259,7 @@ function ladder(h){
 }
 
 /* swing table: [club, 편한F, 편한D, 풀F, 풀D] carry m */
-const SW=[["52°",70,75,80,85],["P",85,90,100,105],["9번",95,100,110,115],["8번",105,110,120,125],["7번",115,120,130,135],["6번",125,130,140,145],["5번",135,140,150,155],["4번",null,null,null,165]];
+const SW=[["52°",70,75,80,85],["P",82,90,null,100],["9번",92,100,null,110],["8번",102,110,null,120],["7번",112,120,null,130],["6번",122,130,null,140],["5번",132,140,null,150],["4번",142,150,null,160]];
 const SWN=["편한F","편한D","풀F","풀D"];
 const OPTS=[];
 SW.forEach(r=>r.slice(1).forEach((c,i)=>{if(c)OPTS.push({club:r[0],sw:SWN[i],c});}));
@@ -286,8 +287,8 @@ function recs(h,k){
     return {list:OPTS.filter(o=>o.c===lo||o.c===hi),tag:"사이 거리"};
   }
   const l=OPTS.filter(o=>Math.abs(o.c-d)===md);
-  const diff=l[0].c-d;
-  return {list:l,tag:diff<=-3?`${-diff}m 짧음`:diff>=3?`${diff}m 김`:""};
+  const diff=l[0].c-d, mixed=l.some(o=>o.c<d)&&l.some(o=>o.c>d);
+  return {list:l,tag:md<3?"":mixed?`±${md}m`:diff<0?`${-diff}m 짧음`:`${diff}m 김`};
 }
 const lab=o=>`${o.club}${o.sw?" "+o.sw:""}${o.c?" "+o.c:""}${o.note?" ("+o.note+")":""}`;
 function recHTML(h,k){
